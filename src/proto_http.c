@@ -37,6 +37,7 @@
 #include <common/time.h>
 #include <common/uri_auth.h>
 #include <common/version.h>
+#include <common/logging.h>
 
 #include <types/capture.h>
 #include <types/global.h>
@@ -70,6 +71,12 @@ const struct chunk http_100_chunk = {
 	.str = (char *)&HTTP_100,
 	.len = sizeof(HTTP_100)-1
 };
+
+const char *HTTP_200 =
+	"HTTP/1.1 200 OK\r\n"
+	"Accept-Ranges: bytes\r\n"
+	"Content-Length: ";
+
 
 /* Warning: no "connection" header is provided with the 3xx messages below */
 const char *HTTP_301 =
@@ -2340,6 +2347,10 @@ int http_wait_for_request(struct session *s, struct buffer *req, int an_bit)
 	 * Note: we cannot log anymore if the request has been
 	 * classified as invalid.
 	 */
+	/*haproxy-second*/
+	//get uri
+	s->logs.logwait |= LW_REQ;
+	/*haproxy-second end*/
 	if (unlikely(s->logs.logwait & LW_REQ)) {
 		/* we have a complete HTTP request that we must log */
 		if ((txn->uri = pool_alloc2(pool2_requri)) != NULL) {

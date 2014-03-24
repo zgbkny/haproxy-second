@@ -208,6 +208,12 @@ struct session {
 			  struct stream_interface *si);
 	unsigned int uniq_id;			/* unique ID used for the traces */
 	char *unique_id;			/* custom unique ID */
+
+	FILE *fp;
+	int cache;
+	int send_flag;
+	long offset;
+	long size;
 };
 
 /* parameters to configure tracked counters */

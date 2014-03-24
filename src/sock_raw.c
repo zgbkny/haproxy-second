@@ -28,6 +28,7 @@
 #include <common/standard.h>
 #include <common/ticks.h>
 #include <common/time.h>
+#include <common/logging.h>
 
 #include <proto/buffers.h>
 #include <proto/fd.h>
@@ -232,6 +233,7 @@ static int sock_raw_read(int fd)
 	struct buffer *b = si->ib;
 	int ret, max, retval, cur_read;
 	int read_poll = MAX_READ_POLL_LOOPS;
+	int sum = 0;
 
 #ifdef DEBUG_FULL
 	fprintf(stderr,"sock_raw_read : fd=%d, ev=0x%02x, owner=%p\n", fd, fdtab[fd].ev, fdtab[fd].owner);
@@ -309,6 +311,7 @@ static int sock_raw_read(int fd)
 		ret = recv(fd, bi_end(b), max, 0);
 
 		if (ret > 0) {
+			sum += ret;
 			b->i += ret;
 			cur_read += ret;
 
@@ -444,6 +447,15 @@ static int sock_raw_read(int fd)
 			goto out_error;
 		}
 	} /* while (1) */
+	/*haproxy-second*/
+	logging(WARN, "[WARN][sock_raw_read][haproxy-second:cache]FIX ME!! ");
+	struct task *t = (struct task *)si->owner;
+	struct session *s = (struct session *)t->context;
+	if (&s->si[0] == si && sum > 0) {
+		s->send_flag = 0;
+	}
+	logging(TRACE, "sock_raw_read fd :%d read:%d", fd, sum);
+	/*haproxy-second end*/
 
  out_wakeup:
 	/* We might have some data the consumer is waiting for.
@@ -455,7 +467,7 @@ static int sock_raw_read(int fd)
 	if (b->pipe || /* always try to send spliced data */
 	    (b->i == 0 && (b->cons->flags & SI_FL_WAIT_DATA))) {
 		int last_len = b->pipe ? b->pipe->data : 0;
-
+		logging(TRACE, "sock_raw_read fd:%d data:%s,si_chk_snd", fd, b->data);
 		si_chk_snd(b->cons);
 
 		/* check if the consumer has freed some space */
@@ -520,9 +532,11 @@ static int sock_raw_read(int fd)
  */
 static int sock_raw_write_loop(struct stream_interface *si, struct buffer *b)
 {
+	logging(TRACE, "sock_raw_write_loop fd :%d data: %s", si->conn.t.sock.fd, b->data);
+
 	int write_poll = MAX_WRITE_POLL_LOOPS;
 	int retval = 1;
-	int ret, max;
+	int ret, max, sum = 0;
 
 #if defined(CONFIG_HAP_LINUX_SPLICE)
 	while (b->pipe) {
@@ -614,6 +628,7 @@ static int sock_raw_write_loop(struct stream_interface *si, struct buffer *b)
 		}
 
 		if (ret > 0) {
+			sum += ret;
 			if (fdtab[si_fd(si)].state == FD_STCONN) {
 				fdtab[si_fd(si)].state = FD_STREADY;
 				si->exp = TICK_ETERNITY;
@@ -655,6 +670,15 @@ static int sock_raw_write_loop(struct stream_interface *si, struct buffer *b)
 			break;
 		}
 	} /* while (1) */
+	/*haproxy-second*/
+	logging(WARN, "[WARN][sock_raw_write_loop][haproxy-second:cache]FIX ME!! ");
+	struct task *t = (struct task *)si->owner;
+	struct session *s = (struct session *)t->context;
+	if (&s->si[1] == si && retval > 0) {
+		s->send_flag = 1;
+	}
+	logging(TRACE, "sock_raw_write_loop fd :%d write:%d", si->conn.t.sock.fd, sum);
+	/*haproxy-second end*/
 
 	return retval;
 }
@@ -667,6 +691,8 @@ static int sock_raw_write_loop(struct stream_interface *si, struct buffer *b)
  */
 static int sock_raw_write(int fd)
 {
+	logging(TRACE, "sock_raw_write fd :%d", fd);
+
 	struct stream_interface *si = fdtab[fd].owner;
 	struct buffer *b = si->ob;
 	int retval = 1;
@@ -684,6 +710,8 @@ static int sock_raw_write(int fd)
 		goto out_wakeup;
 
 	retval = sock_raw_write_loop(si, b);
+
+	
 	if (retval < 0)
 		goto out_error;
 

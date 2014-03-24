@@ -51,6 +51,7 @@ extern const char http_is_ver_token[256];
 
 extern const int http_err_codes[HTTP_ERR_SIZE];
 extern struct chunk http_err_chunks[HTTP_ERR_SIZE];
+extern const char *HTTP_200;
 extern const char *HTTP_302;
 extern const char *HTTP_303;
 
