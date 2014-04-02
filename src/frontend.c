@@ -27,7 +27,7 @@
 #include <common/debug.h>
 #include <common/standard.h>
 #include <common/time.h>
-
+#include <common/logging.h>
 #include <types/global.h>
 
 #include <proto/acl.h>

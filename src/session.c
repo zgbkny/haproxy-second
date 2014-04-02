@@ -72,6 +72,7 @@ int session_accept(struct listener *l, int cfd, struct sockaddr_storage *addr)
 	s->cache = 0;
 	s->offset = -1;
 	s->size = -1;
+	s->count = 0;
 
 	/* minimum session initialization required for monitor mode below */
 	s->flags = 0;
@@ -1301,6 +1302,7 @@ static int process_store_rules(struct session *s, struct buffer *rep, int an_bit
 /*haproxy-second*/
 int process_cache(struct session *s)
 {
+	logging(TRACE, "[process_cache]");
 	char file[100] = "/home/ww/cache";
     char size[100] = "\0";
 	struct http_txn *txn = &s->txn;
@@ -1501,6 +1503,7 @@ int process_cache(struct session *s)
  */
 struct task *process_session(struct task *t)
 {
+	logging(TRACE, "[process_session]t->state");
 	struct server *srv;
 	struct session *s = t->context;
 	unsigned int rqf_last, rpf_last;
@@ -1683,7 +1686,7 @@ struct task *process_session(struct task *t)
 	    s->si[0].state != rq_prod_last ||
 	    s->si[1].state != rq_cons_last) {
 		unsigned int flags = s->req->flags;
-
+		logging(TRACE, "resync_request");
 		if (s->req->prod->state >= SI_ST_EST) {
 			int max_loops = global.tune.maxpollevents;
 			unsigned int ana_list;
@@ -1847,7 +1850,7 @@ struct task *process_session(struct task *t)
 		 * happened on the write side of the buffer.
 		 */
 		unsigned int flags = s->rep->flags;
-
+		logging(TRACE, "resync_response hijack");
 		if ((s->rep->flags & (BF_WRITE_PARTIAL|BF_WRITE_ERROR|BF_SHUTW)) &&
 		    !(s->rep->flags & BF_FULL)) {
 			s->rep->hijacker(s, s->rep);
@@ -1863,7 +1866,7 @@ struct task *process_session(struct task *t)
 		 s->si[0].state != rp_cons_last ||
 		 s->si[1].state != rp_prod_last) {
 		unsigned int flags = s->rep->flags;
-
+		logging(TRACE, "resync_response");
 		if ((s->rep->flags & BF_MASK_ANALYSER) &&
 		    (s->rep->analysers & AN_REQ_WAIT_HTTP)) {
 			/* Due to HTTP pipelining, the HTTP request analyser might be waiting
@@ -2299,7 +2302,7 @@ struct task *process_session(struct task *t)
 	}
 
 	/*haproxy-second*/
-	if ((s->rep->cons->state == SI_ST_EST && s->req->cons->state == SI_ST_EST)) {
+	if (1 || (s->rep->cons->state == SI_ST_EST && s->req->cons->state == SI_ST_EST)) {
 		struct http_txn *txn = &s->txn;
 		struct http_msg *msg_req = &txn->req;
 		struct http_msg *msg_rsp = &txn->rsp;
@@ -2311,9 +2314,10 @@ struct task *process_session(struct task *t)
 		if (msg_req->msg_state == HTTP_MSG_RQBEFORE
 			&& msg_rsp->msg_state == HTTP_MSG_RPBEFORE
 			&& s->cache >= 0 ) {
-		//	EV_FD_SET(s->si[0].conn.t.sock.fd, DIR_RD);
-		//	EV_FD_CLR(s->si[1].conn.t.sock.fd, DIR_WR);
-		//	EV_FD_CLR(s->si[1].conn.t.sock.fd, DIR_RD);
+			logging(TRACE, "all init");
+			EV_FD_SET(s->si[0].conn.t.sock.fd, DIR_RD);
+			EV_FD_CLR(s->si[1].conn.t.sock.fd, DIR_WR);
+			EV_FD_CLR(s->si[1].conn.t.sock.fd, DIR_RD);
 		}
 		if (msg_req->msg_state == HTTP_MSG_TUNNEL
 			&& msg_rsp->msg_state == HTTP_MSG_TUNNEL) {
@@ -2417,7 +2421,7 @@ struct task *process_session(struct task *t)
 			ABORT_NOW();
 #endif
 		/*haproxy-second*/
-		if (0 || (s->rep->cons->state == SI_ST_EST && s->req->cons->state == SI_ST_EST)) {
+		if (1 || (s->rep->cons->state == SI_ST_EST && s->req->cons->state == SI_ST_EST)) {
 			struct http_txn *txn = &s->txn;
 			struct http_msg *msg_req = &txn->req;
 			struct http_msg *msg_rsp = &txn->rsp;
@@ -2425,15 +2429,28 @@ struct task *process_session(struct task *t)
 			if (msg_req && msg_req->msg_state == HTTP_MSG_DONE &&
 				msg_rsp && msg_rsp->msg_state == HTTP_MSG_RPBEFORE
 				&& s->cache >= 0) {
-				if (!s->send_flag)
-					process_cache(s);
-				else 
+				logging(TRACE, "%08x:%ssecond.cache[%04x:%04x][time:%u]", 
+						s->uniq_id, s->be->id,
+				        (unsigned short)si_fd(&s->si[0]),(unsigned short)si_fd(&s->si[1]),
+				        now_ms);
+				if (!s->send_flag) {
+					if ((s->count++)%2) {
+						process_cache(s);
+					} else {
+						s->cache = -1;
+					}
+				} else 
 					s->cache = -1;
 				if (s->cache < 0) {
 					EV_FD_COND_S(s->si[1].conn.t.sock.fd, DIR_WR);
 				}
 			}
 		}
+		logging(TRACE, "%08x:%ssecond.retchk[%04x:%04x][time:%u]si_state[%04x:%04x]si_flags[%04x:%04x]", 
+			s->uniq_id, s->be->id,
+	        (unsigned short)si_fd(&s->si[0]),(unsigned short)si_fd(&s->si[1]),
+	        now_ms,
+			s->si[0].state, s->si[1].state, s->si[0].flags, s->si[1].flags);
 		/*haproxy-second end*/
 		return t; /* nothing more to do */
 	}

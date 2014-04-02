@@ -75,6 +75,10 @@ const struct chunk http_100_chunk = {
 const char *HTTP_200 =
 	"HTTP/1.1 200 OK\r\n"
 	"Accept-Ranges: bytes\r\n"
+	"Server: Apache-Coyote/1.1\r\n"
+	"Last-Modified: Fri, 14 Mar 2014 08:03:20 GMT\r\n"
+	//"Content-Type: image/bmp\r\n"
+	"Date: Tue, 01 Apr 2014 08:23:08 GMT\r\n"
 	"Content-Length: ";
 
 
@@ -3250,6 +3254,7 @@ int http_process_req_common(struct session *s, struct buffer *req, int an_bit, s
  */
 int http_process_request(struct session *s, struct buffer *req, int an_bit)
 {
+	logging(TRACE, "[http_process_request]");
 	struct http_txn *txn = &s->txn;
 	struct http_msg *msg = &txn->req;
 
@@ -5968,6 +5973,8 @@ int del_hdr_value(struct buffer *buf, char **from, char *next)
  */
 void manage_client_side_cookies(struct session *t, struct buffer *req)
 {
+	logging(TRACE, "[manage_client_side_cookies]");
+
 	struct http_txn *txn = &t->txn;
 	int preserve_hdr;
 	int cur_idx, old_idx;
@@ -6656,6 +6663,7 @@ int apply_filters_to_response(struct session *s, struct buffer *rtr, struct prox
  */
 void manage_server_side_cookies(struct session *t, struct buffer *res)
 {
+	logging(TRACE, "[manage_server_side_cookies]");
 	struct http_txn *txn = &t->txn;
 	struct server *srv;
 	int is_cookie2;

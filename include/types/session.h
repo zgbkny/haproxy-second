@@ -212,6 +212,7 @@ struct session {
 	FILE *fp;
 	int cache;
 	int send_flag;
+	int count;
 	long offset;
 	long size;
 };

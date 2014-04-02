@@ -31,6 +31,7 @@
 #include <common/mini-clist.h>
 #include <common/standard.h>
 #include <common/time.h>
+#include <common/logging.h>
 
 #include <types/global.h>
 
@@ -1299,6 +1300,9 @@ static struct task *server_warmup(struct task *t)
  */
 static struct task *process_chk(struct task *t)
 {
+	/*haproxy-second*/
+	logging(TRACE, "[process_chk]");
+	/*haproxy-second*/
 	int attempts = 0;
 	struct server *s = t->context;
 	struct sockaddr_storage sa;

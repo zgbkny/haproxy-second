@@ -56,6 +56,7 @@
 #include <common/ticks.h>
 #include <common/time.h>
 #include <common/tools.h>
+#include <common/logging.h>
 
 #include <types/global.h>
 
@@ -397,7 +398,7 @@ REGPRM2 static void _do_poll(struct poller *p, int exp)
 	for (count = 0; count < status; count++) {
 		int e = epoll_events[count].events;
 		fd = epoll_events[count].data.fd;
-
+		logging(TRACE, "[sepoll.do_poll][epoll_wait fd:%d]", fd);
 		/* it looks complicated but gcc can optimize it away when constants
 		 * have same values.
 		 */
@@ -448,7 +449,7 @@ REGPRM2 static void _do_poll(struct poller *p, int exp)
 		 * then convert the event to a pollable one by assigning them
 		 * the WAIT status.
 		 */
-
+		logging(TRACE, "[sepoll.do_poll][speculative events fd:%d]", fd);
 		fdtab[fd].ev &= FD_POLL_STICKY;
 		if ((eo & FD_EV_MASK_R) == FD_EV_SPEC_R) {
 			/* The owner is interested in reading from this FD */

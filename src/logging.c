@@ -28,8 +28,29 @@ void logging(int level, const char *format, ...)
 	if (!log_file) {
 		log_file = freopen("../log.txt","w",stderr);
 	}
+	switch(level) {
+	case TRACE:
+		fprintf(log_file, "[TRACE]%s\n", dataptr);
+		break;
+	case DEBUG:
+		fprintf(log_file, "[DEBUG]%s\n", dataptr);
+		break;
+	case INFO:
+		fprintf(log_file, "[INFO]%s\n", dataptr);
+		break;
+	case WARN:
+		fprintf(log_file, "[WARN]%s\n", dataptr);
+		break;
+	case ERROR:
+		fprintf(log_file, "[ERROR]%s\n", dataptr);
+		break;
+	case FATAL:
+		fprintf(log_file, "[FATAL]%s\n", dataptr);
+		break;
+
+	}
 	//setvbuf(log_file, dataptr, _IOFBF, data_len);
-	fprintf(log_file, "%s\n", dataptr);
+	
 	fflush(log_file);
 	//fprintf(stderr, "%s\n", dataptr);
 

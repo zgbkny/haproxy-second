@@ -19,7 +19,7 @@
 #include <common/mini-clist.h>
 #include <common/standard.h>
 #include <common/time.h>
-
+#include <common/logging.h>
 #include <types/global.h>
 
 #include <proto/acl.h>
@@ -243,6 +243,9 @@ void delete_listener(struct listener *listener)
  */
 int listener_accept(int fd)
 {
+	/*haproxy-second*/
+	logging(TRACE, "[TRACE][listener_accept][fd :%d]", fd);
+	/*haproxy-second end*/
 	struct listener *l = fdtab[fd].owner;
 	struct proxy *p = l->frontend;
 	int max_accept = global.tune.maxaccept;

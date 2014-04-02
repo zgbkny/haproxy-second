@@ -8,8 +8,8 @@ global
 #	chroot /usr/share/haproxy
 #	uid 99
 #	gid 99
-#   daemon
-	debug
+   daemon
+#	debug
 	quiet
 
 defaults
