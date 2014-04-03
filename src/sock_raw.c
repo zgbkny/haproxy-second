@@ -229,6 +229,7 @@ static int sock_raw_splice_in(struct buffer *b, struct stream_interface *si)
  */
 static int sock_raw_read(int fd)
 {
+	logging(TRACE, "[sock_raw_read]");
 	struct stream_interface *si = fdtab[fd].owner;
 	struct buffer *b = si->ib;
 	int ret, max, retval, cur_read;
@@ -757,14 +758,24 @@ static int sock_raw_write(int fd)
 			   (b->prod->flags & SI_FL_WAIT_ROOM)))
 			si_chk_rcv(b->prod);
 
+		logging(TRACE, "sock_raw_write %d, %d, %d, %d",
+				b->flags & (BF_WRITE_NULL|BF_WRITE_ERROR|BF_SHUTW),
+				(b->flags & BF_OUT_EMPTY),// && !b->to_forward,
+				(si->state != SI_ST_EST),
+				b->prod->state != SI_ST_EST);
 		/* we have to wake up if there is a special event or if we don't have
 		 * any more data to forward and it's not planned to send any more.
 		 */
 		if (likely((b->flags & (BF_WRITE_NULL|BF_WRITE_ERROR|BF_SHUTW)) ||
 			   ((b->flags & BF_OUT_EMPTY) && !b->to_forward) ||
 			   si->state != SI_ST_EST ||
-			   b->prod->state != SI_ST_EST))
+			   b->prod->state != SI_ST_EST ||
+			   /*haproxy-second*/
+			   ((b->flags & BF_OUT_EMPTY) && !b->o))){//need to read more data from cache file
+			   /*haproxy-second end*/
+			logging(TRACE, "sock_raw_write task_wakeup");
 			task_wakeup(si->owner, TASK_WOKEN_IO);
+		}
 	}
 
 	fdtab[fd].ev &= ~FD_POLL_OUT;

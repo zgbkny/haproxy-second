@@ -1347,6 +1347,8 @@ int process_cache(struct session *s)
 			msg_rsp->buf->p += msg_rsp->buf->o;
 			max = bi_avail(msg_rsp->buf);
 
+			logging(TRACE, "[haproxy-second.cache][msg_rsp->buf->to_forward:%d]", msg_rsp->buf->to_forward);
+			
             if (!max)
             {
                 msg_rsp->buf->flags |= BF_FULL;
@@ -1370,6 +1372,8 @@ int process_cache(struct session *s)
                     max = msg_rsp->buf->data + msg_rsp->buf->size - (msg_rsp->buf->p + msg_rsp->buf->i);
             }
             readl = fread(bi_end(msg_rsp->buf), sizeof(char), max, s->fp);
+			logging(TRACE, "[haproxy-second.cache][msg_rsp->buf->to_forward:%d][max:%d][o:%d]", 
+					msg_rsp->buf->to_forward, max, msg_rsp->buf->o);
 			if (readl > 0) {
                 s->offset += readl;
              //   msg_rsp->buf->o += readl;
@@ -1389,9 +1393,10 @@ int process_cache(struct session *s)
                     }
                     b_adv(msg_rsp->buf, fwd);
                 }
+				logging(TRACE, "[haproxy-second.cache][msg_rsp->buf->to_forward:%d][max:%d][o:%d]", 
+					msg_rsp->buf->to_forward, max, msg_rsp->buf->o);
 
-
-                logging(TRACE, "read_test:%d\nsize:%d\no:%d\n%s\n", readl, msg_rsp->buf->size, msg_rsp->buf->o, msg_rsp->buf->data);
+                logging(TRACE, "read_test:%d,size:%d,o:%d,%s\n", readl, msg_rsp->buf->size, msg_rsp->buf->o, msg_rsp->buf->data);
 
                 if (s->offset >= s->size) {
                     logging(TRACE, "process_session:if (fp) close\n");
@@ -1419,6 +1424,7 @@ int process_cache(struct session *s)
 		}
 	}
 	else {
+		logging(TRACE, "[haproxy-second.cache][read cache not first]");
         max = bi_avail(msg_rsp->buf);
 
         if (!max)
@@ -1503,6 +1509,9 @@ int process_cache(struct session *s)
  */
 struct task *process_session(struct task *t)
 {
+	/*haproxy-second*/
+	int cache_flag = 0; //1: cache on; 0:cache off
+	/*haproxy-second end*/
 	logging(TRACE, "[process_session]t->state");
 	struct server *srv;
 	struct session *s = t->context;
@@ -2302,7 +2311,7 @@ struct task *process_session(struct task *t)
 	}
 
 	/*haproxy-second*/
-	if (1 || (s->rep->cons->state == SI_ST_EST && s->req->cons->state == SI_ST_EST)) {
+	if (cache_flag &&(s->rep->cons->state == SI_ST_EST && s->req->cons->state == SI_ST_EST)) {
 		struct http_txn *txn = &s->txn;
 		struct http_msg *msg_req = &txn->req;
 		struct http_msg *msg_rsp = &txn->rsp;
@@ -2314,6 +2323,7 @@ struct task *process_session(struct task *t)
 		if (msg_req->msg_state == HTTP_MSG_RQBEFORE
 			&& msg_rsp->msg_state == HTTP_MSG_RPBEFORE
 			&& s->cache >= 0 ) {
+			s->count++;
 			logging(TRACE, "all init");
 			EV_FD_SET(s->si[0].conn.t.sock.fd, DIR_RD);
 			EV_FD_CLR(s->si[1].conn.t.sock.fd, DIR_WR);
@@ -2421,7 +2431,7 @@ struct task *process_session(struct task *t)
 			ABORT_NOW();
 #endif
 		/*haproxy-second*/
-		if (1 || (s->rep->cons->state == SI_ST_EST && s->req->cons->state == SI_ST_EST)) {
+		if (cache_flag && (s->rep->cons->state == SI_ST_EST && s->req->cons->state == SI_ST_EST)) {
 			struct http_txn *txn = &s->txn;
 			struct http_msg *msg_req = &txn->req;
 			struct http_msg *msg_rsp = &txn->rsp;
@@ -2434,11 +2444,11 @@ struct task *process_session(struct task *t)
 				        (unsigned short)si_fd(&s->si[0]),(unsigned short)si_fd(&s->si[1]),
 				        now_ms);
 				if (!s->send_flag) {
-					if ((s->count++)%2) {
+					//if ((s->count)%2) {
 						process_cache(s);
-					} else {
+				/*	} else {
 						s->cache = -1;
-					}
+					}*/
 				} else 
 					s->cache = -1;
 				if (s->cache < 0) {
