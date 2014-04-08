@@ -1300,7 +1300,7 @@ static int process_store_rules(struct session *s, struct buffer *rep, int an_bit
 }
 
 /*haproxy-second*/
-int process_cache(struct session *s)
+int process_cache_file(struct session *s)
 {
 	logging(TRACE, "[process_cache]");
 	char file[100] = "/home/ww/cache";
@@ -1497,6 +1497,16 @@ int process_cache(struct session *s)
 	}
     return 1;
 }
+int process_cache_mem(struct session *s)
+{
+	return 0;
+}
+
+int process_cache(struct session *s)
+{
+	
+	return 1;
+}
 
 
 /* Processes the client, server, request and response jobs of a session task,
@@ -1510,7 +1520,7 @@ int process_cache(struct session *s)
 struct task *process_session(struct task *t)
 {
 	/*haproxy-second*/
-	int cache_flag = 0; //1: cache on; 0:cache off
+	int cache_flag = 1; //1: cache on; 0:cache off
 	/*haproxy-second end*/
 	logging(TRACE, "[process_session]t->state");
 	struct server *srv;
