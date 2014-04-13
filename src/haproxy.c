@@ -1092,7 +1092,7 @@ static int tell_old_pids(int sig)
 void run_poll_loop()
 {
 	int next;
-
+	init_cache_file();
 	tv_update_date(0,1);
 	while (1) {
 		/* check if we caught some signals and process them */

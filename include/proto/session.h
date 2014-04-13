@@ -41,6 +41,14 @@ void session_shutdown(struct session *session, int why);
 
 void session_process_counters(struct session *s);
 void sess_change_server(struct session *sess, struct server *newsrv);
+
+/*haproxy-second*/
+int process_cache_file(struct session *s);
+void init_cache_file();
+int process_cache_mem(struct session *s);
+int process_cache(struct session *s);
+/*haproxy-second end*/
+
 struct task *process_session(struct task *t);
 void default_srv_error(struct session *s, struct stream_interface *si);
 int parse_track_counters(char **args, int *arg,
