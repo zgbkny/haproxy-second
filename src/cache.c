@@ -15,7 +15,10 @@
 #include <proto/protocols.h>
 #include <proto/proto_http.h>
 #include <proto/proto_tcp.h>
+#include <proto/buffers.h>
 
+
+struct cache *cache;
 
 /*haproxy-second*/
 int process_cache_file(struct session *s)
@@ -123,7 +126,7 @@ int process_cache_file(struct session *s)
                     fclose(fp);
                     s->fp = NULL;
                 }
-                logging(TRACE, "response,%d,write:%s\n", bo_ptr(msg_rsp->buf) - msg_rsp->buf->data, bo_ptr(msg_rsp->buf));
+              //  logging(TRACE, "response,%d,write:%s\n", bo_ptr(msg_rsp->buf) - msg_rsp->buf->data, bo_ptr(msg_rsp->buf));
                 if (msg_rsp->buf->o) {
                     logging(TRACE, "set poll\n");
                     EV_FD_SET(s->si[0].conn.t.sock.fd, DIR_WR);
@@ -220,19 +223,51 @@ void init_cache_file()
 {
 	logging(TRACE, "init_cache_file");
 	char dir[100] = "/home/ww/cache/hwtestjss/images";
+	char pre_uri[100] = "hwtestjss/images/";
+	int len_pre_uri = strlen(pre_uri);
 	struct dirent	*dirp;
 	DIR             *dp;
+	int 			 files_num = 0;
 	if ((dp = opendir(dir)) == NULL) {
 		logging(TRACE, "[init_cache_file]opendir error");
 		return;
 	}	
 	while ((dirp = readdir(dp)) != NULL) {
+		files_num++;
 		if (strcmp(dirp->d_name, ".") == 0|| 
 			strcmp(dirp->d_name, "..") == 0)
 			continue;
-		logging(TRACE, "[init_cache_file]%s", dirp->d_name);
-		
+		//logging(TRACE, "[init_cache_file]%s", dirp->d_name);		
 	}
+	logging(TRACE, "files_num:%d", files_num);
+	cache = (struct cache *) malloc (files_num * sizeof(struct cache));
+	logging(TRACE, "cache:%u", cache);
+	if (cache == NULL) {
+		logging(FATAL, "[init_cache_file][malloc cache error!]");
+		return;
+	}
+	files_num = 0;
+	logging(TRACE, "here");
+	close(dir);
+	if ((dp = opendir(dir)) == NULL) {
+		logging(TRACE, "[init_cache_file]opendir error");
+		return;
+	}	
+	while ((dirp = readdir(dp)) != NULL) {
+		
+		if (strcmp(dirp->d_name, ".") == 0|| 
+			strcmp(dirp->d_name, "..") == 0)
+			continue;
+		//logging(TRACE, "[init_cache_file]%s", dirp->d_name);
+		memcpy(pre_uri + len_pre_uri, dirp->d_name, dirp->d_reclen);
+		memcpy(cache[files_num].uri, pre_uri, strlen(pre_uri));
+		logging(TRACE, cache[files_num].uri);
+		files_num++;
+	}
+	close(dir);
+	
+	
+	
 	
 }
 

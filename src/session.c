@@ -47,6 +47,7 @@
 #include <proto/stick_table.h>
 #include <proto/stream_interface.h>
 #include <proto/task.h>
+#include <proto/cache.h>
 
 struct pool_head *pool2_session;
 struct list sessions;

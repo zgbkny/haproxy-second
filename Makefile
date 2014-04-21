@@ -484,7 +484,7 @@ EBTREE_DIR := ebtree
 
 #### Global compile options
 VERBOSE_CFLAGS = $(CFLAGS) $(TARGET_CFLAGS) $(SMALL_OPTS) $(DEFINE)
-COPTS  = -Iinclude -I$(EBTREE_DIR) -Wall
+COPTS  = -Iinclude -I$(EBTREE_DIR) -Iinclude -I hash -Wall
 COPTS += $(CFLAGS) $(TARGET_CFLAGS) $(SMALL_OPTS) $(DEFINE) $(SILENT_DEFINE)
 COPTS += $(DEBUG) $(OPTIONS_CFLAGS) $(ADDINC)
 
@@ -540,13 +540,14 @@ OBJS = src/haproxy.o src/sessionhash.o src/base64.o src/protocols.o \
        src/lb_chash.o src/lb_fwlc.o src/lb_fwrr.o src/lb_map.o src/lb_fas.o \
        src/stream_interface.o src/dumpstats.o src/proto_tcp.o \
        src/session.o src/hdr_idx.o src/ev_select.o src/signal.o \
-       src/acl.o src/sample.o src/memory.o src/freq_ctr.o src/auth.o src/logging.o
+       src/acl.o src/sample.o src/memory.o src/freq_ctr.o src/auth.o src/logging.o src/cache.o
 
 
 EBTREE_OBJS = $(EBTREE_DIR)/ebtree.o \
               $(EBTREE_DIR)/eb32tree.o $(EBTREE_DIR)/eb64tree.o \
               $(EBTREE_DIR)/ebmbtree.o $(EBTREE_DIR)/ebsttree.o \
-              $(EBTREE_DIR)/ebimtree.o $(EBTREE_DIR)/ebistree.o
+              $(EBTREE_DIR)/ebimtree.o $(EBTREE_DIR)/ebistree.o \
+              hash/hash.o
 
 ifneq ($(TRACE),)
 OBJS += src/trace.o
@@ -600,7 +601,7 @@ install-bin: haproxy
 install: install-bin install-man install-doc
 
 clean:
-	rm -f *.[oas] src/*.[oas] ebtree/*.[oas] haproxy test
+	rm -f *.[oas] src/*.[oas] ebtree/*.[oas] hash/*.o haproxy test
 	for dir in . src include/* doc ebtree; do rm -f $$dir/*~ $$dir/*.rej $$dir/core; done
 	rm -f haproxy-$(VERSION).tar.gz haproxy-$(VERSION)$(SUBVERS).tar.gz
 	rm -f haproxy-$(VERSION) nohup.out gmon.out
