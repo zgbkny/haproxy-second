@@ -231,7 +231,7 @@ void read_a_file(hash_key_t *name)
     memcpy(file + strlen(file), name->key.data, strlen(name->key.data));
     FILE *fp = fopen(file, "rb");
     char *value = NULL;
-    logging(TRACE, "read_a_file:%s", file );
+   // logging(TRACE, "read_a_file:%s", file );
     if (fp) {
         fseek(fp, 0L, SEEK_END);
         fsize = ftell(fp);
@@ -326,24 +326,14 @@ void init_cache_file()
         hash_key[files_num].key.data = cache[files_num].uri;
         hash_key[files_num].key.len = strlen(cache[files_num].uri) + 1;
         hash_key[files_num].key_hash = hap_hash_key(hash_key[files_num].key.data, hash_key[files_num].key.len);
-		logging(TRACE, "init cache:%s, %u", hash_key[files_num].key.data, hash_key[files_num].key.len, hash_key[files_num].key_hash);
+		//logging(TRACE, "init cache:%s, %u", hash_key[files_num].key.data, hash_key[files_num].key.len, hash_key[files_num].key_hash);
 		files_num++;
 	}
 	close(dir);
     read_files(hash_key, files_num);
 	hash = hap_hash_init(hash_key, files_num);
-    if (hash) {
-        int i = 0;
-        while (i < hash->size) {
-            hash_elt_t *tt = hash->buckets[i];
-            //logging(TRACE, "%s", hash->buckets[i]->name);
-            if (tt != NULL) {
-                logging(TRACE, "%s", tt->name);
-                tt++;
-            }
-            i++;
-        }
-    }
+    printf("%s\n%s\n",hash_key[3].key.data, hap_hash_find(hash, hap_hash_key(hash_key[3].key.data, hash_key[3].key.len)),
+                                hash_key[3].key.data, hash_key[3].key.len);
 
 }
 

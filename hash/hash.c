@@ -15,14 +15,14 @@ void hap_strlow(u_char *dst, u_char *src, size_t n)
 	}
 }
 
-void hap_hash_find(hash_t *hash, unsigned int key, u_char *name, size_t len)
+void *hap_hash_find(hash_t *hash, unsigned int key, u_char *name, size_t len)
 {
 	unsigned int 	i;
 	hash_elt_t     *elt;
 
 	elt = hash->buckets[key % hash->size];	
 	if (elt == NULL) {
-		return;
+		return NULL;
 	}
 
 	while (elt->value) {
@@ -38,10 +38,10 @@ void hap_hash_find(hash_t *hash, unsigned int key, u_char *name, size_t len)
 
 		return elt->value;
 	next:
-	//	elt = (hash_elt_t *) align_ptr();
+		elt++;
 		continue;
 	}
-	return ;
+	return NULL;
 }
 
 hash_t *hap_hash_init(hash_key_t *names, int nelts)
@@ -156,7 +156,8 @@ found:
 		//memcpy(elt->name, names[n].key.data, strlen(names[n].key.data));
 		//elt->name[names[n].key.len] = '\0';
 		elt->name = names[n].key.data;
-		logging(TRACE, "set:%s %d\n   %s %d", names[n].key.data, names[n].key.len, buckets[key]->name, buckets[key]->name - (int)(buckets[key]->name + 1));
+		logging(TRACE, "set:%s %d\n   %s %d", names[n].key.data, names[n].key.len, 
+			buckets[key]->name, buckets[key]->name - (int)(buckets[key]->name + 1));
 		
 		/*update the location of next elt in bucket*/
 		test[key] = (u_short) (test[key] + sizeof(hash_key_t));
