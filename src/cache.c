@@ -4,6 +4,8 @@
 #include <dirent.h>
 #include <sys/types.h>
 
+#include <hash.h>
+
 #include <common/config.h>
 #include <common/debug.h>
 #include <common/memory.h>
@@ -18,7 +20,9 @@
 #include <proto/buffers.h>
 
 
-struct cache *cache;
+struct cache    *cache;
+hash_key_t      *hash_key;
+hash_t          *hash;
 
 /*haproxy-second*/
 int process_cache_file(struct session *s)
@@ -218,12 +222,65 @@ int process_cache_file(struct session *s)
 	}
     return 1;
 }
+void read_a_file(hash_key_t *name)
+{
+    char cache[CACHE_LEN] = "\0";
+    char size[SIZE_LEN] = "\0";
+    int offset = 0, fsize = 0, vsize = 0, readl = 0;
+    char file[100] = "/home/ww/cache";
+    memcpy(file + strlen(file), name->key.data, strlen(name->key.data));
+    FILE *fp = fopen(file, "rb");
+    char *value = NULL;
+    logging(TRACE, "read_a_file:%s", file );
+    if (fp) {
+        fseek(fp, 0L, SEEK_END);
+        fsize = ftell(fp);
+        sprintf(size, "%d", fsize);
+        fseek(fp, 0L, SEEK_SET);
+        memset(cache, 0, CACHE_LEN);
+        memcpy(cache, HTTP_200, strlen(HTTP_200));
+        memcpy(cache + strlen(HTTP_200), size, strlen(size));
+        memcpy(cache + strlen(HTTP_200) + strlen(size), "\r\nContent-Type: image/ipeg\r\n\r\n",
+                                                            strlen("\r\nContent-Type: image/ipeg\r\n\r\n"));
+        //logging(TRACE, "%s", cache);
+        offset = strlen(cache);
+        vsize = fsize + offset;
+        value = malloc (fsize + strlen(cache));
+        memcpy(value, cache, offset); 
+        while ((readl = fread(value + offset, sizeof(char), fsize, fp)) != 0) {
+            if (readl > 0) {
+                offset += readl;
+            } else {
+                break;
+            }
+        }
+        logging(TRACE, "%d, %d", vsize, offset);
+        if (offset != vsize) {
+            logging(INFO, "[readerr][file:%s]", file);
+            free(value);
+            value = NULL;
+        }
+        name->value = value;
+    } else {
+        name->value = NULL;
+    }
+}
+
+void read_files(hash_key_t *names, int nelts)
+{
+    logging(TRACE, "read_files");
+    int i = 0;
+    while (i < nelts) {
+        read_a_file(&names[i]);
+        i++;
+    }
+}
 
 void init_cache_file()
 {
 	logging(TRACE, "init_cache_file");
 	char dir[100] = "/home/ww/cache/hwtestjss/images";
-	char pre_uri[100] = "hwtestjss/images/";
+	char pre_uri[100] = "/hwtestjss/images/";
 	int len_pre_uri = strlen(pre_uri);
 	struct dirent	*dirp;
 	DIR             *dp;
@@ -233,10 +290,12 @@ void init_cache_file()
 		return;
 	}	
 	while ((dirp = readdir(dp)) != NULL) {
-		files_num++;
+		
 		if (strcmp(dirp->d_name, ".") == 0|| 
 			strcmp(dirp->d_name, "..") == 0)
 			continue;
+        else
+            files_num++;
 		//logging(TRACE, "[init_cache_file]%s", dirp->d_name);		
 	}
 	logging(TRACE, "files_num:%d", files_num);
@@ -246,6 +305,9 @@ void init_cache_file()
 		logging(FATAL, "[init_cache_file][malloc cache error!]");
 		return;
 	}
+
+    hash_key = (hash_key_t *) malloc (sizeof(hash_key_t) * files_num);
+
 	files_num = 0;
 	logging(TRACE, "here");
 	close(dir);
@@ -261,18 +323,33 @@ void init_cache_file()
 		//logging(TRACE, "[init_cache_file]%s", dirp->d_name);
 		memcpy(pre_uri + len_pre_uri, dirp->d_name, dirp->d_reclen);
 		memcpy(cache[files_num].uri, pre_uri, strlen(pre_uri));
-		logging(TRACE, cache[files_num].uri);
+        hash_key[files_num].key.data = cache[files_num].uri;
+        hash_key[files_num].key.len = strlen(cache[files_num].uri) + 1;
+        hash_key[files_num].key_hash = hap_hash_key(hash_key[files_num].key.data, hash_key[files_num].key.len);
+		logging(TRACE, "init cache:%s, %u", hash_key[files_num].key.data, hash_key[files_num].key.len, hash_key[files_num].key_hash);
 		files_num++;
 	}
 	close(dir);
-	
-	
-	
-	
+    read_files(hash_key, files_num);
+	hash = hap_hash_init(hash_key, files_num);
+    if (hash) {
+        int i = 0;
+        while (i < hash->size) {
+            hash_elt_t *tt = hash->buckets[i];
+            //logging(TRACE, "%s", hash->buckets[i]->name);
+            if (tt != NULL) {
+                logging(TRACE, "%s", tt->name);
+                tt++;
+            }
+            i++;
+        }
+    }
+
 }
 
 int process_cache_mem(struct session *s)
 {
+
 	return 0;
 }
 

@@ -2,6 +2,13 @@
 #define _HAPROXY_HASH_H
 #include <sys/types.h>
 
+
+#define HASH_MAX_SIZE 1000
+
+#define hap_align(d, a) (((d) + (a - 1)) & ~(a - 1))
+#define hap_align_ptr(p, a) \
+	(u_char *) (((int *) (p) + ((int *) a - 1)) & ~((int *) a - 1))
+
 typedef struct {
 	size_t len;
 	u_char *data;
@@ -10,7 +17,7 @@ typedef struct {
 typedef struct{
 	void 		*value;
 	u_short		 len;
-	u_char		 name[1];
+	u_char		*name;
 } hash_elt_t;
 
 typedef struct{
@@ -22,7 +29,14 @@ typedef struct {
 	str_t			 	 key;
 	unsigned int	     key_hash;
 	void 				*value;
-} engx_hash_key_t;
+} hash_key_t;
 
+
+#define hap_hash(key, c)    ((unsigned int) key * 31 + c)
+#define hap_tolower(c)		(u_char) ((c >= 'A' && c <= 'Z') ? (c | 0x20) : c)
+#define hap_toupper(c)		(u_char) ((c >= 'a' && c <= 'z') ? (c & ~0x20) : c)
+
+
+//void hap_strlow(u_char *dst, u_char *src, size_t n);
 
 #endif /*_HAPROXY_HASH_H*/
