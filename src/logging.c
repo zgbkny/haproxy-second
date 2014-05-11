@@ -51,7 +51,7 @@ void logging(int level, const char *format, ...)
 	}
 	//setvbuf(log_file, dataptr, _IOFBF, data_len);
 	
-	fflush(log_file);
+	//fflush(log_file);
 	//fprintf(stderr, "%s\n", dataptr);
 
 }

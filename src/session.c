@@ -72,6 +72,7 @@ int session_accept(struct listener *l, int cfd, struct sockaddr_storage *addr)
 		goto out_close;
 
 	s->fp = NULL;
+	s->elt = NULL;
 	s->cache = 0;
 	s->offset = -1;
 	s->size = -1;
@@ -2116,7 +2117,7 @@ struct task *process_session(struct task *t)
 	}
 
 	/*haproxy-second*/
-	if (cache_flag &&(s->rep->cons->state == SI_ST_EST && s->req->cons->state == SI_ST_EST)) {
+	if (cache_flag || (s->rep->cons->state == SI_ST_EST && s->req->cons->state == SI_ST_EST)) {
 		struct http_txn *txn = &s->txn;
 		struct http_msg *msg_req = &txn->req;
 		struct http_msg *msg_rsp = &txn->rsp;
@@ -2148,6 +2149,7 @@ struct task *process_session(struct task *t)
 				if (msg_req && msg_req->buf)
 					msg_req->buf->to_forward = 0;
 				s->cache = 0;
+				s->elt = NULL;
 	            s->req->flags &= ~(BF_FULL|BF_HIJACK|BF_DONT_READ);
 	            s->rep->flags &= ~(BF_FULL|BF_HIJACK|BF_DONT_READ);
 	            s->req->analysers = s->listener->analysers | AN_REQ_HTTP_XFER_BODY;
@@ -2236,7 +2238,7 @@ struct task *process_session(struct task *t)
 			ABORT_NOW();
 #endif
 		/*haproxy-second*/
-		if (cache_flag && (s->rep->cons->state == SI_ST_EST && s->req->cons->state == SI_ST_EST)) {
+		if (cache_flag || (s->rep->cons->state == SI_ST_EST && s->req->cons->state == SI_ST_EST)) {
 			struct http_txn *txn = &s->txn;
 			struct http_msg *msg_req = &txn->req;
 			struct http_msg *msg_rsp = &txn->rsp;

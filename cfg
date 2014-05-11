@@ -8,9 +8,10 @@ global
 #	chroot /usr/share/haproxy
 #	uid 99
 #	gid 99
-#   daemon
-	debug
+    daemon
+#	debug
 	quiet
+	ulimit-n 40960
 
 defaults
 	log	global
@@ -19,10 +20,10 @@ defaults
 	option	dontlognull
 	retries	3
 #	redispatch
-	maxconn	2000
-	contimeout	5000
-	clitimeout	120000
-	srvtimeout	120000
+	maxconn	20000
+	contimeout	5000ms
+	clitimeout	120000ms
+	srvtimeout	120000ms
 
 listen	appli1-rewrite 0.0.0.0:80
 	cookie	SERVERID rewrite

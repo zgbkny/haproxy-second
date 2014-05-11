@@ -15,19 +15,21 @@ typedef struct {
 } str_t;
 
 typedef struct{
-	void 		*value;
-	u_short		 len;
-	u_char		*name;
+	void 				*value;  // NULL when elt is a yayuansu in buckets
+	unsigned int 	 	 vlen;	 // len of value
+	u_short		 	 	 len;
+	u_char				*name;
 } hash_elt_t;
 
 typedef struct{
-	hash_elt_t     **buckets;
-	unsigned int	 size;
+	hash_elt_t     	   **buckets;
+	unsigned int	 	 size;
 } hash_t;
 
 typedef struct {
 	str_t			 	 key;
 	unsigned int	     key_hash;
+	unsigned int 		 vlen;
 	void 				*value;
 } hash_key_t;
 

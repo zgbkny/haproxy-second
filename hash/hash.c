@@ -15,16 +15,17 @@ void hap_strlow(u_char *dst, u_char *src, size_t n)
 	}
 }
 
-void *hap_hash_find(hash_t *hash, unsigned int key, u_char *name, size_t len)
+hash_elt_t *hap_hash_find(hash_t *hash, unsigned int key, u_char *name, size_t len)
 {
 	unsigned int 	i;
 	hash_elt_t     *elt;
-
+	
 	elt = hash->buckets[key % hash->size];	
 	if (elt == NULL) {
 		return NULL;
 	}
-
+	//logging(TRACE, "key size:%d;%d,%d", key % hash->size, len, elt->len);
+	//logging(TRACE, "%s\n%s", name, elt->name);
 	while (elt->value) {
 		if (len != (size_t) elt->len) {
 			goto next;		
@@ -35,8 +36,8 @@ void *hap_hash_find(hash_t *hash, unsigned int key, u_char *name, size_t len)
 				goto next;
 			}		
 		}
-
-		return elt->value;
+		//logging(TRACE, "hash find:%d", elt->vlen);
+		return elt;
 	next:
 		elt++;
 		continue;
@@ -105,7 +106,7 @@ found:
 		}
 		test[i] = (u_short) (hap_align(test[i], hap_cacheline_size));
 		len += test[i];
-		logging(TRACE, "test[i]:%d, %d", test[i], sizeof(hash_elt_t));
+		//logging(TRACE, "test[i]:%d, %d", test[i], sizeof(hash_elt_t));
 	}
 
 	hash = malloc(sizeof(hash));
@@ -136,7 +137,7 @@ found:
 		}
 		buckets[i] = (hash_elt_t *) elts;
 		elts += test[i];
-		logging(TRACE, "test[i]:%d", test[i]);
+		//logging(TRACE, "test[i]:%d", test[i]);
 	}
 
 	/*stuff data*/
@@ -149,18 +150,19 @@ found:
 			continue;
 		}
 		key = names[n].key_hash % size;
-		elt = (hash_elt_t *) ((u_char *) buckets[key] + test[key]);
-
+		elt = (hash_elt_t *) ((u_char *) buckets [key] + test[key]);
+		//logging(TRACE, "test%:%d", test[key]%sizeof(hash_elt_t));
 		elt->value = names[n].value;
 		elt->len = (u_short) names[n].key.len;
+		elt->vlen = names[n].vlen;
 		//memcpy(elt->name, names[n].key.data, strlen(names[n].key.data));
 		//elt->name[names[n].key.len] = '\0';
 		elt->name = names[n].key.data;
-		logging(TRACE, "set:%s %d\n   %s %d", names[n].key.data, names[n].key.len, 
-			buckets[key]->name, buckets[key]->name - (int)(buckets[key]->name + 1));
+		//logging(TRACE, "set:%s %d\n   %s %d", names[n].key.data, names[n].key.len, 
+		//	buckets[key]->name, buckets[key]->name - (int)(buckets[key]->name + 1));
 		
 		/*update the location of next elt in bucket*/
-		test[key] = (u_short) (test[key] + sizeof(hash_key_t));
+		test[key] = (u_short) (test[key] + sizeof(hash_elt_t));
 	}
 
 	/*stuff the end node*/

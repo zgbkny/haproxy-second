@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <hash.h>
 
 #include <common/config.h>
 #include <common/mini-clist.h>
@@ -209,12 +210,13 @@ struct session {
 	unsigned int uniq_id;			/* unique ID used for the traces */
 	char *unique_id;			/* custom unique ID */
 
-	FILE *fp;
-	int cache;
-	int send_flag;
-	int count;
-	long offset;
-	long size;
+	FILE 		*fp;
+	hash_elt_t  *elt;
+	int 		 cache;
+	int 		 send_flag;
+	int 		 count;
+	long 		 offset;
+	long 		 size;
 };
 
 /* parameters to configure tracked counters */
